@@ -1043,6 +1043,44 @@ print_file_data_base (void)
   hash_print_stats (&files, stdout);
 }
 
+
+static void
+print_target_update_time (const void *item)
+{
+  const struct file *f = item;
+
+  int built_in_special_target=(
+       (0==strcmp(f->name,".PHONY"))
+    || (0==strcmp(f->name,".SUFFIXES"))
+    || (0==strcmp(f->name,".DEFAULT"))
+    || (0==strcmp(f->name,".PRECIOUS"))
+    || (0==strcmp(f->name,".INTERMEDIATE"))
+    || (0==strcmp(f->name,".SECONDARY"))
+    || (0==strcmp(f->name,".SECONDEXPANSION"))
+    || (0==strcmp(f->name,".DELETE_ON_ERROR"))
+    || (0==strcmp(f->name,".IGNORE"))
+    || (0==strcmp(f->name,".LOW_RESOLUTION_TIME"))
+    || (0==strcmp(f->name,".SILENT"))
+    || (0==strcmp(f->name,".EXPORT_ALL_VARIABLES"))
+    || (0==strcmp(f->name,".NOTPARALLEL"))
+    || (0==strcmp(f->name,".ONESHELL"))
+    || (0==strcmp(f->name,".POSIX"))
+    );
+  if ((f->is_target) && (!built_in_special_target))
+    {
+        double invoked_time_in_mill = (f->t_invoked.tv_sec) * 1000 + (f->t_invoked.tv_usec) / 1000;
+        double finished_time_in_mill = (f->t_finished.tv_sec) * 1000 + (f->t_finished.tv_usec) / 1000;
+        printf ("%s\t%.0f\t%.0f\n", f->name, invoked_time_in_mill, finished_time_in_mill);
+    }
+}
+
+void
+print_targets_update_time (void)
+{
+  hash_map (&files, print_target_update_time);
+}
+ 
+
 /* Verify the integrity of the data base of files.  */
 
 #define VERIFY_CACHED(_p,_n) \

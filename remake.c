@@ -853,6 +853,7 @@ notice_finished_file (struct file *file)
   int touched = 0;
 
   file->command_state = cs_finished;
+  gettimeofday (&file->t_finished, NULL);
   file->updated = 1;
 
   if (touch_flag
@@ -1177,6 +1178,7 @@ touch_file (struct file *file)
 static void
 remake_file (struct file *file)
 {
+  gettimeofday (&file->t_invoked, NULL);
   if (file->cmds == 0)
     {
       if (file->phony)
