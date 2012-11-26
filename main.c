@@ -179,6 +179,11 @@ int ignore_errors_flag = 0;
 
 int print_data_base_flag = 0;
 
+/* Nonzero means don't remake anything, just print the dependency graph
+   that results from reading the makefile (-g).  */
+
+int print_graph_flag = 0;
+
 /* Nonzero means don't remake anything; just return a nonzero status
    if the specified targets are not up to date (-q).  */
 
@@ -330,6 +335,9 @@ static const char *const usage[] =
   -f FILE, --file=FILE, --makefile=FILE\n\
                               Read FILE as a makefile.\n"),
     N_("\
+  -g, --graph                 Print make's internal dependency graph\n\
+                              in Graphviz format, without remaking makefiles.\n"),
+    N_("\
   -h, --help                  Print this message and exit.\n"),
     N_("\
   -i, --ignore-errors         Ignore errors from recipes.\n"),
@@ -398,6 +406,7 @@ static const struct command_switch switches[] =
     { 'D', flag, &suspend_flag, 1, 1, 0, 0, 0, "suspend-for-debug" },
 #endif
     { 'e', flag, &env_overrides, 1, 1, 0, 0, 0, "environment-overrides", },
+    { 'g', flag, &print_graph_flag, 1, 1, 0, 0, 0, "graph" },
     { 'h', flag, &print_usage_flag, 0, 0, 0, 0, 0, "help" },
     { 'i', flag, &ignore_errors_flag, 1, 1, 0, 0, 0, "ignore-errors" },
     { 'k', flag, &keep_going_flag, 1, 1, 0, 0, &default_keep_going_flag,
@@ -2203,7 +2212,10 @@ main (int argc, char **argv, char **envp)
       define_makeflags (1, 1);
 
       rebuilding_makefiles = 1;
-      status = update_goal_chain (read_files);
+      if (print_graph_flag)
+        status = -1;
+      else
+        status = update_goal_chain (read_files);
       rebuilding_makefiles = 0;
 
       switch (status)
@@ -2525,30 +2537,35 @@ main (int argc, char **argv, char **envp)
   DB (DB_BASIC, (_("Updating goal targets....\n")));
 
   {
-    switch (update_goal_chain (goals))
-    {
-      case us_none:
-        /* Nothing happened.  */
-        /* FALLTHROUGH */
-      case us_success:
-        /* Keep the previous result.  */
-        break;
-      case us_question:
-        /* We are under -q and would run some commands.  */
-        makefile_status = MAKE_TROUBLE;
-        break;
-      case us_failed:
-        /* Updating failed.  POSIX.2 specifies exit status >1 for this;
-           but in VMS, there is only success and failure.  */
-        makefile_status = MAKE_FAILURE;
-        break;
-    }
+    if (print_graph_flag)
+      makefile_status=0;
+    else
+      {
+        switch (update_goal_chain (goals))
+        {
+          case us_none:
+            /* Nothing happened.  */
+            /* FALLTHROUGH */
+          case us_success:
+            /* Keep the previous result.  */
+            break;
+          case us_question:
+            /* We are under -q and would run some commands.  */
+            makefile_status = MAKE_TROUBLE;
+            break;
+          case us_failed:
+            /* Updating failed.  POSIX.2 specifies exit status >1 for this;
+               but in VMS, there is only success and failure.  */
+            makefile_status = MAKE_FAILURE;
+            break;
+        }
 
-    /* If we detected some clock skew, generate one last warning */
-    if (clock_skew_detected)
-      error (NILF,
-             _("warning:  Clock skew detected.  Your build may be incomplete."));
-
+        /* If we detected some clock skew, generate one last warning */
+        if (clock_skew_detected)
+          error (NILF,
+                 _("warning:  Clock skew detected.  Your build may be incomplete."));
+      }
+      
     /* Exit.  */
     die (makefile_status);
   }
@@ -3241,7 +3258,7 @@ print_version (void)
 {
   static int printed_version = 0;
 
-  char *precede = print_data_base_flag ? "# " : "";
+  char *precede = (print_data_base_flag||print_graph_flag) ? "# " : "";
 
   if (printed_version)
     /* Do it only once.  */
@@ -3407,6 +3424,9 @@ die (int status)
 
       if (print_data_base_flag)
         print_data_base ();
+
+      if (print_graph_flag)
+        print_graph ();
 
       if (verify_flag)
         verify_file_data_base ();
