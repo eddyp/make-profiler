@@ -22,6 +22,7 @@ this program.  If not, see <http://www.gnu.org/licenses/>.  */
    All of these are chained together through `next'.  */
 
 #include "hash.h"
+#include <sys/time.h>
 
 struct file
   {
@@ -72,6 +73,9 @@ struct file
 	cs_finished		/* Commands finished.  */
       } command_state ENUM_BITFIELD (2);
 
+    struct timeval t_invoked;
+    struct timeval t_finished;
+    
     unsigned int precious:1;	/* Non-0 means don't delete file on quit */
     unsigned int low_resolution_time:1;	/* Nonzero if this file's time stamp
 					   has only one-second resolution.  */

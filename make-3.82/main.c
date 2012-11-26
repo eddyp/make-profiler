@@ -180,6 +180,8 @@ int print_data_base_flag = 0;
 
 int print_graph_flag = 0;
 
+int print_target_update_time_flag = 0;
+
 /* Nonzero means don't remake anything; just return a nonzero status
    if the specified targets are not up to date (-q).  */
 
@@ -366,6 +368,8 @@ static const char *const usage[] =
     N_("\
   -t, --touch                 Touch targets instead of remaking them.\n"),
     N_("\
+  -u, --update-time           Print elapsed time of each target.\n"),
+    N_("\
   -v, --version               Print the version number of make and exit.\n"),
     N_("\
   -w, --print-directory       Print the current directory.\n"),
@@ -423,6 +427,7 @@ static const struct command_switch switches[] =
     { 'S', flag_off, &keep_going_flag, 1, 1, 0, 0, &default_keep_going_flag,
       "no-keep-going" },
     { 't', flag, &touch_flag, 1, 1, 1, 0, 0, "touch" },
+    { 'u', flag, &print_target_update_time_flag, 1, 1, 0, 0, 0, "update-time" },
     { 'v', flag, &print_version_flag, 1, 1, 0, 0, 0, "version" },
     { CHAR_MAX+3, string, &verbosity_flags, 1, 1, 0, 0, 0,
       "verbosity" },
@@ -3207,6 +3212,9 @@ die (int status)
 
       if (print_graph_flag)
         print_graph ();
+        
+      if (print_target_update_time_flag)
+        print_targets_update_time ();
 
       verify_file_data_base ();
 
