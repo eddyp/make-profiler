@@ -175,6 +175,11 @@ int ignore_errors_flag = 0;
 
 int print_data_base_flag = 0;
 
+/* Nonzero means don't remake anything, just print the dependency graph
+   that results from reading the makefile (-g).  */
+
+int print_graph_flag = 0;
+
 /* Nonzero means don't remake anything; just return a nonzero status
    if the specified targets are not up to date (-q).  */
 
@@ -321,6 +326,9 @@ static const char *const usage[] =
   -f FILE, --file=FILE, --makefile=FILE\n\
                               Read FILE as a makefile.\n"),
     N_("\
+  -g, --graph                 Print make's internal dependency graph\n\
+                              in Graphviz format, without remaking makefiles.\n"),
+    N_("\
   -h, --help                  Print this message and exit.\n"),
     N_("\
   -i, --ignore-errors         Ignore errors from recipes.\n"),
@@ -385,6 +393,7 @@ static const struct command_switch switches[] =
 #endif
     { 'e', flag, &env_overrides, 1, 1, 0, 0, 0, "environment-overrides", },
     { 'f', filename, &makefiles, 0, 0, 0, 0, 0, "file" },
+    { 'g', flag, &print_graph_flag, 1, 1, 0, 0, 0, "graph" },
     { 'h', flag, &print_usage_flag, 0, 0, 0, 0, 0, "help" },
     { 'i', flag, &ignore_errors_flag, 1, 1, 0, 0, 0, "ignore-errors" },
     { 'I', filename, &include_directories, 1, 1, 0, 0, 0,
@@ -1946,7 +1955,10 @@ main (int argc, char **argv, char **envp)
       define_makeflags (1, 1);
 
       rebuilding_makefiles = 1;
-      status = update_goal_chain (read_makefiles);
+      if (print_graph_flag)
+        status = -1;
+      else
+        status = update_goal_chain (read_makefiles);
       rebuilding_makefiles = 0;
 
       switch (status)
@@ -2278,33 +2290,37 @@ main (int argc, char **argv, char **envp)
 
   {
     int status;
+    if (print_graph_flag)
+      status=0;
+    else
+      {
+        switch (update_goal_chain (goals))
+        {
+          case -1:
+            /* Nothing happened.  */
+          case 0:
+            /* Updated successfully.  */
+            status = makefile_status;
+            break;
+          case 1:
+            /* We are under -q and would run some commands.  */
+            status = MAKE_TROUBLE;
+            break;
+          case 2:
+            /* Updating failed.  POSIX.2 specifies exit status >1 for this;
+               but in VMS, there is only success and failure.  */
+            status = MAKE_FAILURE;
+            break;
+          default:
+            abort ();
+        }
 
-    switch (update_goal_chain (goals))
-    {
-      case -1:
-        /* Nothing happened.  */
-      case 0:
-        /* Updated successfully.  */
-        status = makefile_status;
-        break;
-      case 1:
-        /* We are under -q and would run some commands.  */
-        status = MAKE_TROUBLE;
-        break;
-      case 2:
-        /* Updating failed.  POSIX.2 specifies exit status >1 for this;
-           but in VMS, there is only success and failure.  */
-        status = MAKE_FAILURE;
-        break;
-      default:
-        abort ();
-    }
-
-    /* If we detected some clock skew, generate one last warning */
-    if (clock_skew_detected)
-      error (NILF,
-             _("warning:  Clock skew detected.  Your build may be incomplete."));
-
+        /* If we detected some clock skew, generate one last warning */
+        if (clock_skew_detected)
+          error (NILF,
+                 _("warning:  Clock skew detected.  Your build may be incomplete."));
+      }
+      
     /* Exit.  */
     die (status);
   }
@@ -3042,7 +3058,7 @@ print_version (void)
 {
   static int printed_version = 0;
 
-  char *precede = print_data_base_flag ? "# " : "";
+  char *precede = (print_data_base_flag||print_graph_flag) ? "# " : "";
 
   if (printed_version)
     /* Do it only once.  */
@@ -3187,6 +3203,10 @@ die (int status)
 
       if (print_data_base_flag)
 	print_data_base ();
+
+
+      if (print_graph_flag)
+        print_graph ();
 
       verify_file_data_base ();
 
