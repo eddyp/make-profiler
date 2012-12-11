@@ -3021,7 +3021,7 @@ parse_file_seq (char **stringp, unsigned int size, int stopchar,
          character, so ensure there's some word ending like that before
          considering this an archive group.  */
       if (! (flags & PARSEFS_NOAR)
-          && tp == tmpbuf && tp[0] != '(' && tp[nlen-1] != ')')
+          && tp == tmpbuf && tp[0] != '(' && tp[nlen-1] == ')')
         {
           char *n = strchr (tp, '(');
           if (n)
