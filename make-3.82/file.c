@@ -1071,16 +1071,17 @@ print_graph_file (const void *item)
       printf ("  \"%s\" [", f->name);
       /* XXX some of these should be attached to the nodes in some way;
        * though I'm not sure what style changes should be made for which ones.
-       *  ~ LukeShu
-      if (f->double_colon)   puts (_("// Double-colon rule."));
-      if (f->precious)       puts (_("// Precious file (prerequisite of .PRECIOUS)."));
-    */if (f->phony)          puts (_(" color=blue "));/*
-      if (f->cmd_target)     puts (_("// Command line target."));
-      if (f->dontcare)       puts (_("// A default, MAKEFILES, or -include/sinclude makefile."));
-      if (f->tried_implicit) puts (_("// Implicit rule search has been done."));
-      else                   puts (_("// Implicit rule search has not been done."));
-      if (f->stem != 0)    printf (_("// Implicit/static pattern stem: `%s'\n"), f->stem);
-      if (f->intermediate)   puts (_("// File is an intermediate prerequisite."));
+       *  ~ LukeShu*/
+      if (f->double_colon)   puts (_(" shape=tripleoctagon"));
+      if (f->precious)       puts (_(" shape=Mdiamond"));
+      if (f->phony)          puts (_(" color=blue "));
+      if (f->cmd_target)     puts (_(" shape=diamond"));
+      if (f->dontcare)       puts (_(" shape=parallelogram"));
+      if (f->tried_implicit) puts (_(" style=dotted"));
+      else                   puts (_(" style=dashed"));
+      if (f->intermediate)   puts (_(" style=filled, fillcolor=yellow"));
+      /*
+       * if (f->stem != 0)      printf (_("// Implicit/static pattern stem: `%s'\n"), f->stem);
       if (f->also_make != 0)
         {
           const struct dep *d;
