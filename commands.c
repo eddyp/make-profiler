@@ -454,6 +454,10 @@ execute_file_commands (struct file *file)
       break;
   if (*p == '\0')
     {
+	  if (just_print_flag || (!(COMMANDS_SILENT) && !silent_flag))  {
+		  message (0, NULL);
+		  print_file_DAG (file);
+	  }
       /* If there are no commands, assume everything worked.  */
       set_command_state (file, cs_running);
       file->update_status = 0;

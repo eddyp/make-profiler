@@ -914,8 +914,9 @@ notice_finished_file (struct file *file)
 
       /* If there were no commands at all, it's always new. */
 
-      else if (file->is_target && file->cmds == 0)
+      else if (file->is_target && file->cmds == 0){
 	i = 1;
+	}
 
       file->last_mtime = i == 0 ? UNKNOWN_MTIME : NEW_MTIME;
     }

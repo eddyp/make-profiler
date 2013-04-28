@@ -51,6 +51,7 @@ struct child
     char *command_ptr;		/* Ptr into command_lines[command_line].  */
 
     pid_t pid;			/* Child process's ID number.  */
+    struct timeval td_start;
 #ifdef VMS
     int efn;			/* Completion event flag number */
     int cstatus;		/* Completion status */

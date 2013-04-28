@@ -898,23 +898,23 @@ print_prereqs (const struct dep *deps)
   /* Print all normal dependencies; note any order-only deps.  */
   for (; deps != 0; deps = deps->next)
     if (! deps->ignore_mtime)
-      printf (" %s", dep_name (deps));
+      fprintf (stderr," %s", dep_name (deps));
     else if (! ood)
       ood = deps;
 
   /* Print order-only deps, if we have any.  */
   if (ood)
     {
-      printf (" | %s", dep_name (ood));
+      fprintf (stderr," | %s", dep_name (ood));
       for (ood = ood->next; ood != 0; ood = ood->next)
         if (ood->ignore_mtime)
-          printf (" %s", dep_name (ood));
+          fprintf (stderr," %s", dep_name (ood));
     }
 
-  putchar ('\n');
+  fputc ('\n',stderr);
 }
 
-static void
+void
 print_file (const void *item)
 {
   const struct file *f = item;
@@ -1013,12 +1013,14 @@ print_file (const void *item)
 void
 print_file_data_base (void)
 {
+  puts (_("\n# DMAKE BEGIN print_file_data_base"));
   puts (_("\n# Files"));
 
   hash_map (&files, print_file);
 
   fputs (_("\n# files hash-table stats:\n# "), stdout);
   hash_print_stats (&files, stdout);
+  puts (_("\n# DMAKE END print_file_data_base"));
 }
 
 /* Dump the dependency graph to a Graphviz file (on stdout)  */
@@ -1042,6 +1044,26 @@ print_graph_prereqs (const char *filename, const struct dep *deps)
           /* XXX: we need to distinguish these some how.
            * Is dotting them the right way? */
     }
+}
+
+void print_file_ALL (void){
+  hash_map (&files, print_file_DAG);
+}
+void print_file_DAG (struct file *file)
+{
+	if(file->cmds == NULL && file->deps == NULL) return;
+	fprintf (stderr,"DAG DEPENDENCIES %s:%s", file->name, file->double_colon ? ":" : "");
+	print_prereqs (file->deps);
+}
+
+void print_file_GOAL (struct dep * item)
+{
+	fprintf (stderr,"DAG TRY to do : ");
+  while (item != NULL){
+	  fprintf (stderr,"%s ", item->file->name);
+	item = item->next;
+  }
+	  fprintf (stderr,"\n");
 }
 
 static void
@@ -1071,10 +1093,10 @@ print_graph_file (const void *item)
       printf ("  \"%s\" [", f->name);
       /* XXX some of these should be attached to the nodes in some way;
        * though I'm not sure what style changes should be made for which ones.
-       *  ~ LukeShu
+       *  ~ LukeShu*/
       if (f->double_colon)   puts (_("// Double-colon rule."));
       if (f->precious)       puts (_("// Precious file (prerequisite of .PRECIOUS)."));
-    */if (f->phony)          puts (_(" color=blue "));/*
+      if (f->phony)          puts (_(" color=blue "));
       if (f->cmd_target)     puts (_("// Command line target."));
       if (f->dontcare)       puts (_("// A default, MAKEFILES, or -include/sinclude makefile."));
       if (f->tried_implicit) puts (_("// Implicit rule search has been done."));
@@ -1112,7 +1134,7 @@ print_graph_file (const void *item)
 	    case 1:  assert (question_flag);
 	             puts (_("// Update: Needs to be (-q is set)")); break;
 	    case 2:  puts (_("// Update: Failed")); break;
-	    default: puts (_("// Update: Invalid `update_status' value));
+	    default: puts (_("// Update: Invalid `update_status' value"));
 	            fflush (stdout);
 	            fflush (stderr);
 	            abort ();
@@ -1125,11 +1147,9 @@ print_graph_file (const void *item)
         }
       if (f->variables != 0) print_file_variables (f);
       if (f->cmds != 0) print_commands (f->cmds);
-      */
       puts("];");
       print_graph_prereqs (f->name, f->deps);
     }
-  
   if (f->prev)
     print_graph_file ((const void *) f->prev);
 }

@@ -142,7 +142,7 @@ int touch_flag;
 /* Nonzero means just print what commands would need to be executed,
    don't actually execute them (-n).  */
 
-int just_print_flag;
+int just_print_flag = 1;
 
 /* Print debugging info (--debug).  */
 
@@ -1491,6 +1491,7 @@ main (int argc, char **argv, char **envp)
     }
 
   define_variable_cname ("CURDIR", current_directory, o_file, 0);
+  if (just_print_flag)  fprintf(stderr,"DAG CURDIR : %s\n",current_directory);
 
   /* Read any stdin makefiles into temporary files.  */
 
@@ -2288,6 +2289,11 @@ main (int argc, char **argv, char **envp)
 
   DB (DB_BASIC, (_("Updating goal targets....\n")));
 
+  if (just_print_flag)  {
+	  print_file_GOAL (goals);
+	  print_file_ALL ();
+
+  }
   {
     int status;
     if (print_graph_flag)
@@ -3099,17 +3105,17 @@ print_data_base ()
   time_t when;
 
   when = time ((time_t *) 0);
-  printf (_("\n# Make data base, printed on %s"), ctime (&when));
+  printf (_("\n# DMAKE start Make data base, printed on %s"), ctime (&when));
 
-  print_variable_data_base ();
-  print_dir_data_base ();
-  print_rule_data_base ();
+  //print_variable_data_base ();
+  //print_dir_data_base ();
+  //print_rule_data_base ();
   print_file_data_base ();
-  print_vpath_data_base ();
-  strcache_print_stats ("#");
+  //print_vpath_data_base ();
+  //strcache_print_stats ("#");
 
   when = time ((time_t *) 0);
-  printf (_("\n# Finished Make data base on %s\n"), ctime (&when));
+  printf (_("\n# DMAKE Finished Make data base on %s\n"), ctime (&when));
 }
 
 static void
@@ -3254,30 +3260,30 @@ log_working_directory (int entering)
   if (makelevel == 0)
     if (starting_directory == 0)
       if (entering)
-        printf (_("%s: Entering an unknown directory\n"), program);
+        fprintf (stderr,_("%s: Entering an unknown directory\n"), program);
       else
-        printf (_("%s: Leaving an unknown directory\n"), program);
+        fprintf (stderr,_("%s: Leaving an unknown directory\n"), program);
     else
       if (entering)
-        printf (_("%s: Entering directory `%s'\n"),
+        fprintf (stderr,_("%s: Entering directory `%s'\n"),
                 program, starting_directory);
       else
-        printf (_("%s: Leaving directory `%s'\n"),
+        fprintf (stderr,_("%s: Leaving directory `%s'\n"),
                 program, starting_directory);
   else
     if (starting_directory == 0)
       if (entering)
-        printf (_("%s[%u]: Entering an unknown directory\n"),
+        fprintf (stderr,_("%s[%u]: Entering an unknown directory\n"),
                 program, makelevel);
       else
-        printf (_("%s[%u]: Leaving an unknown directory\n"),
+        fprintf (stderr,_("%s[%u]: Leaving an unknown directory\n"),
                 program, makelevel);
     else
       if (entering)
-        printf (_("%s[%u]: Entering directory `%s'\n"),
+        fprintf (stderr,_("%s[%u]: Entering directory `%s'\n"),
                 program, makelevel, starting_directory);
       else
-        printf (_("%s[%u]: Leaving directory `%s'\n"),
+        fprintf (stderr,_("%s[%u]: Leaving directory `%s'\n"),
                 program, makelevel, starting_directory);
 
   /* Flush stdout to be sure this comes before any stderr output.  */

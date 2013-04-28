@@ -19,6 +19,7 @@ this program.  If not, see <http://www.gnu.org/licenses/>.  */
 #include "make.h"
 
 #include <assert.h>
+#include <sys/time.h> 
 
 #include "job.h"
 #include "debug.h"
@@ -526,6 +527,7 @@ reap_children (int block, int err)
        We're blocking for a complete child OR there are more children to reap
 
      we'll keep reaping children.  */
+  struct timeval td_end;
 
   while ((children != 0 || shell_function_pid != 0)
          && (block || REAP_MORE))
@@ -616,6 +618,7 @@ reap_children (int block, int err)
 #endif
 		EINTRLOOP(pid, wait (&status));
 #endif /* !VMS */
+	      gettimeofday(&td_end,NULL);
 	    }
 	  else
 	    pid = 0;
@@ -770,7 +773,14 @@ reap_children (int block, int err)
         free (c->sh_batch_file);
         c->sh_batch_file = NULL;
       }
-
+      struct timeval td_start = c->td_start;
+      unsigned long long elapsed = 1000000.0 * (td_end.tv_sec -td_start.tv_sec);
+      elapsed += (td_end.tv_usec - td_start.tv_usec);
+      struct stat buf;
+      if (stat(c->file->name, &buf) == 0)
+	      fprintf(stderr, "DAG Time elapsed is %llu microseconds for target : %s file : %llu\n",elapsed, c->file->name, buf.st_size);
+      else
+	      fprintf(stderr, "DAG Time elapsed is %llu microseconds for target : %s file : not known \n",elapsed, c->file->name);
       /* If this child had the good stdin, say it is now free.  */
       if (c->good_stdin)
         good_stdin_used = 0;
@@ -1037,8 +1047,9 @@ start_job_command (struct child *child)
 #endif
 
   /* If we have a completely empty commandset, stop now.  */
-  if (!child->command_ptr)
+  if (!child->command_ptr){
     goto next_command;
+  }
 
   /* Combine the flags parsed for the line itself with
      the flags specified globally for this target.  */
@@ -1109,6 +1120,11 @@ start_job_command (struct child *child)
     {
       /* Go on to the next command.  It might be the recursive one.
 	 We construct ARGV only to find the end of the command line.  */
+	    if (just_print_flag || (!(flags & COMMANDS_SILENT) && !silent_flag))  {
+		    message (0, NULL);
+		    print_file_DAG (child->file);
+		    fprintf (stderr, "DAG Target : %s Command : %s\n", child->file->name, p);
+	    }
 #ifndef VMS
       if (argv)
         {
@@ -1129,7 +1145,7 @@ start_job_command (struct child *child)
       if (job_next_command (child))
 	start_job_command (child);
       else
-	{
+      {
 	  /* No more commands.  Make sure we're "running"; we might not be if
              (e.g.) all commands were skipped due to -n.  */
           set_command_state (child->file, cs_running);
@@ -1143,8 +1159,11 @@ start_job_command (struct child *child)
      can log the working directory before the command's own error messages
      appear.  */
 
-  message (0, (just_print_flag || (!(flags & COMMANDS_SILENT) && !silent_flag))
-	   ? "%s" : (char *) 0, p);
+  if (just_print_flag || (!(flags & COMMANDS_SILENT) && !silent_flag))  {
+	  message (0, NULL);
+	  print_file_DAG (child->file);
+	  fprintf (stderr, "DAG Target : %s Command : %s\n", child->file->name, p);
+  }
 
   /* Tell update_goal_chain that a command has been started on behalf of
      this target.  It is important that this happens here and not in
@@ -1184,7 +1203,7 @@ start_job_command (struct child *child)
 
   /* If -n was given, recurse to get the next line in the sequence.  */
 
-  if (just_print_flag && !(flags & COMMANDS_RECURSE))
+  if (0 && just_print_flag && !(flags & COMMANDS_RECURSE))
     {
 #ifndef VMS
       free (argv[0]);
@@ -1321,7 +1340,7 @@ start_job_command (struct child *child)
 	fcntl (job_rfd, F_SETFD, 0);
 
 #else  /* !__EMX__ */
-
+      gettimeofday(&(child->td_start),NULL);
       child->pid = vfork ();
       environ = parent_environ;	/* Restore value child may have clobbered.  */
       if (child->pid == 0)
@@ -1344,7 +1363,9 @@ start_job_command (struct child *child)
           if (stack_limit.rlim_cur)
             setrlimit (RLIMIT_STACK, &stack_limit);
 #endif
-
+//commande a timer avec le nom de la target c'est mieux il est dans p
+//normalement encore accessible
+	  fprintf(stderr, "DAG execution target : %s command :%s\n",child->file->name,p);
 	  child_execute_job (child->good_stdin ? 0 : bad_stdin, 1,
                              argv, child->environment);
 	}
@@ -2045,7 +2066,6 @@ child_execute_job (int stdin_fd, int stdout_fd, char **argv, char **envp)
     (void) close (stdin_fd);
   if (stdout_fd != 1)
     (void) close (stdout_fd);
-
   /* Run the command.  */
   exec_command (argv, envp);
 }
@@ -2932,7 +2952,7 @@ construct_command_argv_internal (char *line, char **restp, char *shell,
     /* Some shells do not work well when invoked as 'sh -c xxx' to run a
        command line (e.g. Cygnus GNUWIN32 sh.exe on WIN32 systems).  In these
        cases, run commands via a script file.  */
-    if (just_print_flag && !(flags & COMMANDS_RECURSE)) {
+    if (0 && just_print_flag && !(flags & COMMANDS_RECURSE)) {
       /* Need to allocate new_argv, although it's unused, because
         start_job_command will want to free it and its 0'th element.  */
       new_argv = xmalloc(2 * sizeof (char *));

@@ -20,7 +20,7 @@ this program.  If not, see <http://www.gnu.org/licenses/>.  */
 /* Structure that represents the info on one file
    that the makefile says how to make.
    All of these are chained together through `next'.  */
-
+#include <time.h>
 #include "hash.h"
 
 struct file
@@ -100,6 +100,7 @@ struct file
 
 
 extern struct file *suffix_file, *default_file;
+void print_file (const void *item);
 
 
 struct file *lookup_file (const char *name);
@@ -117,6 +118,8 @@ char *build_target_list (char *old_list);
 void print_prereqs (const struct dep *deps);
 void print_file_data_base (void);
 void print_graph (void);
+void print_file_ALL (void);
+void print_file_DAG (struct file *file);
 
 #if FILE_TIMESTAMP_HI_RES
 # define FILE_TIMESTAMP_STAT_MODTIME(fname, st) \
