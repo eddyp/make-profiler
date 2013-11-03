@@ -13,5 +13,6 @@ This work is based on:
  - OpenShift guest <zlqhem@daum.net>'s "Update time" patches and fixes
 
 TODO:
+ - print profiling information in a more parsable format into a specific file
  - make graph output customizable via a <makefile>.graphcfg file that allows disabling the printing of specific targets/target types in the graph
  - evaluate using '--profile' instead of '--updte-time'
