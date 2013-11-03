@@ -9,7 +9,7 @@ When passing -g/--graph to GNU Make to generate a Graphviz file instead of build
 When -u/--update-time is given, GNU Make will print start and stop times for each of the targets to allow profiling.
 
 This work is based on:
- - the "Create graph output" patch from http://savannah.gnu.org/patch/?7447
+ - Luke Shumaker's "Create graph output" patch from http://savannah.gnu.org/patch/?7447
  - OpenShift guest <zlqhem@daum.net>'s "Update time" patches and fixes
 
 TODO:
