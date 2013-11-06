@@ -1141,7 +1141,7 @@ print_graph_file (const void *item)
 	    case 1:  assert (question_flag);
 	             puts (_("// Update: Needs to be (-q is set)")); break;
 	    case 2:  puts (_("// Update: Failed")); break;
-	    default: puts (_("// Update: Invalid `update_status' value));
+	    default: puts (_("// Update: Invalid `update_status' value"));
 	            fflush (stdout);
 	            fflush (stderr);
 	            abort ();
