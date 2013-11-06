@@ -185,6 +185,8 @@ int print_data_base_flag = 0;
 
 int print_graph_flag = 0;
 
+/* Nonzero means print time stamps for start and finish for each of the
+   targets in the makefile. */
 int print_target_update_time_flag = 0;
 
 /* Nonzero means don't remake anything; just return a nonzero status
