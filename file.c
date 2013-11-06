@@ -1196,7 +1196,8 @@ print_target_update_time (const void *item)
       double finished_time_in_mill = (f->t_finished.tv_sec) * 1000 +
                 (f->t_finished.tv_usec) / 1000;
       if (invoked_time_in_mill)
-        fprintf (stderr, "[PROF:%s] %.0f - %.0f (%.0f)\n", f->name,
+        fprintf (stderr, "[PROF:%s:lvl=%u:pid=%d] %.0f;%.0f;%.0f\n", f->name,
+                makelevel, getpid(),
                 invoked_time_in_mill, finished_time_in_mill,
                 finished_time_in_mill-invoked_time_in_mill);
     }
