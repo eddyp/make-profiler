@@ -1191,9 +1191,14 @@ print_target_update_time (const void *item)
     );
   if ((f->is_target) && (!built_in_special_target))
     {
-        double invoked_time_in_mill = (f->t_invoked.tv_sec) * 1000 + (f->t_invoked.tv_usec) / 1000;
-        double finished_time_in_mill = (f->t_finished.tv_sec) * 1000 + (f->t_finished.tv_usec) / 1000;
-        printf ("[PROFILING:%s]\t%.0f\t%.0f\n", f->name, invoked_time_in_mill, finished_time_in_mill);
+      double invoked_time_in_mill = (f->t_invoked.tv_sec) * 1000 +
+                (f->t_invoked.tv_usec) / 1000;
+      double finished_time_in_mill = (f->t_finished.tv_sec) * 1000 +
+                (f->t_finished.tv_usec) / 1000;
+      if (invoked_time_in_mill)
+        fprintf (stderr, "[PROF:%s] %.0f - %.0f (%.0f)\n", f->name,
+                invoked_time_in_mill, finished_time_in_mill,
+                finished_time_in_mill-invoked_time_in_mill);
     }
 }
 
