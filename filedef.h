@@ -125,6 +125,7 @@ char *build_target_list (char *old_list);
 void print_prereqs (const struct dep *deps);
 void print_file_data_base (void);
 void print_graph (void);
+void print_targets_update_time (void);
 
 #if FILE_TIMESTAMP_HI_RES
 # define FILE_TIMESTAMP_STAT_MODTIME(fname, st) \
