@@ -1102,8 +1102,8 @@ print_graph_file (const void *item)
       if (f->tried_implicit) puts (" style=dotted");
       else                   puts (" style=dashed");
       if (f->intermediate)   puts (" style=filled, fillcolor=yellow");
-      /*
-       * if (f->stem != 0)      printf (_("// Implicit/static pattern stem: `%s'\n"), f->stem);
+      #if 0
+      if (f->stem != 0)      printf (_("// Implicit/static pattern stem: `%s'\n"), f->stem);
       if (f->also_make != 0)
         {
           const struct dep *d;
@@ -1148,7 +1148,7 @@ print_graph_file (const void *item)
         }
       if (f->variables != 0) print_file_variables (f);
       if (f->cmds != 0) print_commands (f->cmds);
-      */
+      #endif
       puts("];");
       print_graph_prereqs (f->name, f->deps);
     }
