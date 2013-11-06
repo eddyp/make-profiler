@@ -1070,7 +1070,7 @@ print_target_update_time (const void *item)
     {
         double invoked_time_in_mill = (f->t_invoked.tv_sec) * 1000 + (f->t_invoked.tv_usec) / 1000;
         double finished_time_in_mill = (f->t_finished.tv_sec) * 1000 + (f->t_finished.tv_usec) / 1000;
-        printf ("%s\t%.0f\t%.0f\n", f->name, invoked_time_in_mill, finished_time_in_mill);
+        printf ("[PROFILING:%s]\t%.0f\t%.0f\n", f->name, invoked_time_in_mill, finished_time_in_mill);
     }
 }
 
@@ -1080,7 +1080,6 @@ print_targets_update_time (void)
   hash_map (&files, print_target_update_time);
 }
  
-
 /* Verify the integrity of the data base of files.  */
 
 #define VERIFY_CACHED(_p,_n) \
