@@ -2542,6 +2542,7 @@ main (int argc, char **argv, char **envp)
           O (error, NILF,
                  _("warning:  Clock skew detected.  Your build may be incomplete."));
       }
+
     /* Exit.  */
     die (makefile_status);
   }
@@ -2549,7 +2550,7 @@ main (int argc, char **argv, char **envp)
   /* NOTREACHED */
   exit (0);
 }
-
+
 /* Parsing of arguments, decoding of switches.  */
 
 static char options[1 + sizeof (switches) / sizeof (switches[0]) * 3];
@@ -2987,7 +2988,7 @@ decode_env_switches (char *envar, unsigned int len)
   /* Parse those words.  */
   decode_switches (argc, argv, 1);
 }
-
+
 /* Quote the string IN so that it will be interpreted as a single word with
    no magic by decode_env_switches; also double dollar signs to avoid
    variable expansion in make itself.  Write the result into OUT, returning
@@ -3249,7 +3250,7 @@ define_makeflags (int all, int makefile)
   return define_variable_cname ("MAKEFLAGS", flagstring,
                                 env_overrides ? o_env_override : o_file, 1);
 }
-
+
 /* Print version information.  */
 
 static void
@@ -3391,7 +3392,7 @@ clean_jobserver (int status)
         }
     }
 }
-
+
 /* Exit with STATUS, cleaning up as necessary.  */
 
 void
@@ -3424,7 +3425,7 @@ die (int status)
 
       if (print_graph_flag)
         print_graph ();
-        
+
       if (print_target_update_time_flag)
         print_targets_update_time ();
 

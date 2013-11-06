@@ -201,7 +201,7 @@ enter_file (const char *name)
 
   return new;
 }
-
+
 /* Rehash FILE to NAME.  This is not as simple as resetting
    the 'hname' member, since it must be put in a new hash bucket,
    and possibly merged with an existing file called NAME.  */
@@ -348,7 +348,7 @@ rename_file (struct file *from_file, const char *to_hname)
       from_file = from_file->prev;
     }
 }
-
+
 /* Remove all nonprecious intermediate files.
    If SIG is nonzero, this was caused by a fatal signal,
    meaning that a different message will be printed, and
@@ -780,7 +780,7 @@ snap_deps (void)
   */
 #endif
 }
-
+
 /* Set the 'command_state' member of FILE and all its 'also_make's.  */
 
 void
@@ -793,7 +793,7 @@ set_command_state (struct file *file, enum cmd_state state)
   for (d = file->also_make; d != 0; d = d->next)
     d->file->command_state = state;
 }
-
+
 /* Convert an external file timestamp to internal form.  */
 
 FILE_TIMESTAMP
@@ -817,7 +817,7 @@ file_timestamp_cons (const char *fname, time_t stamp, long int ns)
 
   return ts;
 }
-
+
 /* Return the current time as a file timestamp, setting *RESOLUTION to
    its resolution.  */
 FILE_TIMESTAMP
@@ -898,7 +898,7 @@ file_timestamp_sprintf (char *p, FILE_TIMESTAMP ts)
 
   *p = '\0';
 }
-
+
 /* Print the data base of files.  */
 
 void
@@ -1048,7 +1048,7 @@ print_file_data_base (void)
   fputs (_("\n# files hash-table stats:\n# "), stdout);
   hash_print_stats (&files, stdout);
 }
-
+
 /* Dump the dependency graph to a Graphviz file (on stdout)  */
 
 void
@@ -1158,7 +1158,7 @@ print_graph_file (const void *item)
       puts("];");
       print_graph_prereqs (f->name, f->deps);
     }
-  
+
   if (f->prev)
     print_graph_file ((const void *) f->prev);
 }
@@ -1208,7 +1208,7 @@ print_targets_update_time (void)
 {
   hash_map (&files, print_target_update_time);
 }
- 
+
 /* Verify the integrity of the data base of files.  */
 
 #define VERIFY_CACHED(_p,_n) \
