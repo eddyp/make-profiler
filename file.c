@@ -1111,7 +1111,7 @@ print_graph_file (const void *item)
       if (f->tried_implicit) printf (" shape=underline");
       if (f->intermediate)   printf (" style=dotted color=yellow");
       #if 0
-      if (f->stem != 0)      printf (_("// Implicit/static pattern stem: `%s'\n"), f->stem);
+      if (f->stem != 0)      printf (" shape=box3d label=\"\\N (%s)\"", f->stem); /* Implicit/static pattern stem: f->stem */
       if (f->also_make != 0)
         {
           const struct dep *d;
