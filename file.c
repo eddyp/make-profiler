@@ -1053,14 +1053,16 @@ print_graph_prereqs (const char *filename, const struct dep *deps)
   /* Print all normal dependencies; note any order-only deps.  */
   for (; deps != 0; deps = deps->next)
     if (! deps->ignore_mtime)
-      printf ("  \"%s\" -> \"%s\";\n", filename, dep_name (deps));
+      printf ("  \"%s\" -> \"%s\" [%s %s] ;\n", filename, dep_name (deps),
+              deps->changed ? "color=red": "",
+              deps->dontcare ? "arrowhead=empty" : "arrowhead=normal");
 
   /* Print order-only deps, if we have any.  */
   if (ood)
     {
       for (ood = ood->next; ood != 0; ood = ood->next)
         if (ood->ignore_mtime)
-          printf ("    %s -> %s [style=dotted];\n", filename, dep_name (ood));
+          printf ("    %s -> %s [style=dashed];\n", filename, dep_name (ood));
           /* XXX: we need to distinguish these some how.
            * Is dotting them the right way? */
     }
