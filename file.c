@@ -1102,14 +1102,14 @@ print_graph_file (const void *item)
       /* XXX some of these should be attached to the nodes in some way;
        * though I'm not sure what style changes should be made for which ones.
        *  ~ LukeShu*/
-      if (f->double_colon)   puts (" shape=tripleoctagon");
-      if (f->precious)       puts (" shape=Mdiamond");
-      if (f->phony)          puts (" color=blue ");
-      if (f->cmd_target)     puts (" shape=diamond");
-      if (f->dontcare)       puts (" shape=parallelogram");
-      if (f->tried_implicit) puts (" style=dotted");
-      else                   puts (" style=dashed");
-      if (f->intermediate)   puts (" style=filled, fillcolor=yellow");
+      if (f->double_colon)   printf (" shape=tripleoctagon");
+      if (f->precious)       printf (" fontcolor=red");
+      if (f->phony)          printf (" style=dashed color=blue");
+      else                   printf (" style=filled fillcolor=green");
+      if (f->cmd_target)     printf (" shape=diamond root");
+      if (f->dontcare)       printf (" shape=parallelogram");
+      if (f->tried_implicit) printf (" shape=underline");
+      if (f->intermediate)   printf (" style=dotted color=yellow");
       #if 0
       if (f->stem != 0)      printf (_("// Implicit/static pattern stem: `%s'\n"), f->stem);
       if (f->also_make != 0)
@@ -1157,7 +1157,7 @@ print_graph_file (const void *item)
       if (f->variables != 0) print_file_variables (f);
       if (f->cmds != 0) print_commands (f->cmds);
       #endif
-      puts("];");
+      printf("];\n");
       print_graph_prereqs (f->name, f->deps);
     }
 
