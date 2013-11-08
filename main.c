@@ -370,7 +370,8 @@ static const char *const usage[] =
     N_("\
   -p, --print-data-base       Print make's internal database.\n"),
     N_("\
-  -P[FMT], --profile[=FMT]    Print profiling information for each target\n\
+  -P[FMT], --profile[=FMT], --profile-format[=FMT]\n\
+                              Print profiling information for each target\n\
                               using the format 'FMT'.\n"),
     N_("\
   -q, --question              Run no recipe; exit status says if up to date.\n"),
@@ -479,6 +480,7 @@ static struct option long_option_aliases[] =
     { "max-load",       optional_argument,      0, 'l' },
     { "dry-run",        no_argument,            0, 'n' },
     { "recon",          no_argument,            0, 'n' },
+    { "profile-format", optional_argument,      0, 'P' },
     { "makefile",       required_argument,      0, 'f' },
   };
 
