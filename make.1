@@ -1,4 +1,4 @@
-.TH MAKE 1 "03 March 2012" "GNU" "User Commands"
+.TH MAKE 1 "19 Nov 2012" "GNU" "User Commands"
 .SH NAME
 make \- GNU make utility to maintain groups of programs
 .SH SYNOPSIS
@@ -253,6 +253,61 @@ This also prints the version information given by the
 switch (see below).
 To print the data base without trying to remake any files, use
 .IR "make \-p \-f/dev/null" .
+.TP 0.5i
+\fB\-P\fR[\fIFMT\fR], \fB\-\-profile\fR[=\fIFMT\fR], \fB\-\-profile\-format\fR[=\fIFMT\fR]
+Print to \fIstderr\fR profiling information for each run target, one line per target, according to format string
+.IR "FMT" .
+.SP 1
+The
+.I FMT
+string can contain plain text and the following formatting sequences:
+.RS 8
+.PP
+\fB%N\fR target name
+.RE
+.RS 8
+\fB%L\fR recursion level for the make instance processing the target
+.RE
+.RS 8
+\fB%P\fR
+pid of the make instance processing the target
+.RE
+.RS 8
+\fB%S\fR
+start target timestamp (in miliseconds since 1 ian 1970)
+.RE
+.RS 8
+\fB%E\fR
+end target timestamp (in miliseconds since 1 ian 1970)
+.RE
+.RS 8
+\fB%D\fR
+difference between the target start and end timestamps (in miliseconds)
+.RE
+.RS 8
+\fB%%\fR
+literal %
+.RE
+.PP
+.RS 8
+If the option is repeated, all the
+.I FMT
+parameters are concatenated internally into a single formatting string.
+.PP
+Any unrecognized
+.I %
+sequence will generate an error.
+If the
+.I FMT
+string ends with a single
+.I %
+character, then that character will be ignored.
+.PP
+The default
+.I FMT
+string is
+.BR "[PROF:%N:lvl=%L:pid=%P] %S;%E;%D" .
+.RE
 .TP 0.5i
 \fB\-q\fR, \fB\-\-question\fR
 ``Question mode''.
