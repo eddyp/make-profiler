@@ -883,7 +883,30 @@ decode_profile_format (void)
         }
       while (*p);
     }
+}
 
+static void
+free_prof_sublist(prof_info *prof_slist)
+{
+  if (prof_slist)
+    {
+      free_prof_sublist(prof_slist->next);
+      prof_slist->next = 0;
+      if (prof_slist->fmt) free(prof_slist->fmt);
+      prof_slist->fmt = 0;
+      prof_slist->info_func = 0;
+      free(prof_slist);
+    }
+}
+
+static void
+clean_profile_list(void)
+{
+  if (!profile_option)
+    return;
+
+  prof_info **pprif = &prif_start;
+  free_prof_sublist(*pprif);
 }
 
 #ifdef WINDOWS32
@@ -3515,6 +3538,7 @@ die (int status)
       if (verify_flag)
         verify_file_data_base ();
 
+      clean_profile_list();
       clean_jobserver (status);
 
       if (output_context)
