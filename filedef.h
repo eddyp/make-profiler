@@ -109,6 +109,15 @@ struct file
 
 extern struct file *suffix_file, *default_file;
 
+typedef void (*prof_info_func_t) (const struct file *, char *);
+typedef struct prof_info_st
+  {
+    const char *fmt; /* format string for fprintf */
+    prof_info_func_t info_func;
+    struct prof_info_st *next;
+  } prof_info;
+
+extern prof_info *prif_start;
 
 struct file *lookup_file (const char *name);
 struct file *enter_file (const char *name);
@@ -125,6 +134,14 @@ char *build_target_list (char *old_list);
 void print_prereqs (const struct dep *deps);
 void print_file_data_base (void);
 void print_targets_update_time (void);
+
+void prof_print_str (const struct file *f, char *fmt);
+void prof_print_name (const struct file *f, char *fmt);
+void prof_print_level (const struct file *f, char *fmt);
+void prof_print_pid (const struct file *f, char *fmt);
+void prof_print_invokets (const struct file *f, char *fmt);
+void prof_print_finishts (const struct file *f, char *fmt);
+void prof_print_diff (const struct file *f, char *fmt);
 
 #if FILE_TIMESTAMP_HI_RES
 # define FILE_TIMESTAMP_STAT_MODTIME(fname, st) \
