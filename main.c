@@ -189,6 +189,9 @@ int print_graph_flag = 0;
    targets in the makefile. */
 static struct stringlist *profile_option = 0;
 
+/* Structure keeping the function call list used to print profiling info */
+prof_info *prif_start = 0;
+
 /* Nonzero means don't remake anything; just return a nonzero status
    if the specified targets are not up to date (-q).  */
 
@@ -795,6 +798,100 @@ decode_output_sync_flags (void)
 
   if (sync_mutex)
     RECORD_SYNC_MUTEX (sync_mutex);
+}
+
+static const char *
+profile_marker_index(const char *s, int *found)
+{
+  char *ix;
+  const char *ps, *pe;
+
+  *found = 0;
+
+  /* consume all literal strings and '%%' */
+  for (ps = 0; (!ps) || (ix && (*(ix+1) == '%')); ps = ix+2)
+    {
+      if (!ps) ps = s;
+      ix = index(ps, '%');
+      if (ix)
+        {
+          pe = ix;
+          if (*(ix+1) == '\0')
+            {
+              /* XXX: Is this better than returning an error? */
+              *ix = '\0';
+              ix = 0;
+            }
+          else
+            *found = (*(ix+1) != '%');
+        }
+      else
+        {
+          pe = index(ps,'\0');
+        }
+    }
+
+  return pe;
+}
+
+static void
+decode_profile_format (void)
+{
+  const char **pp;
+
+  prof_info **pprif = &prif_start;
+  int found;
+
+  if (!profile_option)
+    return;
+
+  /* Turn the profile format string into a printf format string and list of
+     functions to call to get the values of the parameters for the final
+     string.  */
+
+  for (pp=profile_option->list; *pp; ++pp)
+    {
+      const char *p = *pp;
+      const char *pe;
+
+      do
+        {
+          pe = profile_marker_index(p, &found);
+          /* store literal string */
+          if (p < pe)
+            {
+              /* add the literal string between p and pe */
+              *pprif = calloc(sizeof(prof_info), 1);
+              (*pprif)->fmt = xstrndup(p, (unsigned int)(pe-p));
+              (*pprif)->info_func = prof_print_str;
+              pprif = &((*pprif)->next);
+            }
+          if (found)
+            {
+              prof_info_func_t pfunc = 0;
+              switch (*(pe+1))
+                {
+                  case 'N': pfunc = prof_print_name; pe+=2; break;
+                  case 'L': pfunc = prof_print_level; pe+=2; break;
+                  case 'P': pfunc = prof_print_pid; pe+=2; break;
+                  case 'S': pfunc = prof_print_invokets; pe+=2; break;
+                  case 'E': pfunc = prof_print_finishts; pe+=2; break;
+                  case 'D': pfunc = prof_print_diff; pe+=2; break;
+                  default :
+                    fatal (NILF,
+                        _("unknown profile information specifier '%c'"),
+                        *(pe+1));
+                    break;
+                }
+              *pprif = calloc(sizeof(prof_info), 1);
+              (*pprif)->info_func = pfunc;
+              pprif = &((*pprif)->next);
+            }
+          p = pe;
+        }
+      while (*p);
+    }
+
 }
 
 #ifdef WINDOWS32
@@ -2921,6 +3018,7 @@ decode_switches (int argc, char **argv, int env)
   /* If there are any options that need to be decoded do it now.  */
   decode_debug_flags ();
   decode_output_sync_flags ();
+  decode_profile_format ();
 }
 
 /* Decode switches from environment variable ENVAR (which is LEN chars long).

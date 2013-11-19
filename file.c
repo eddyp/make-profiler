@@ -1175,6 +1175,66 @@ print_graph (void)
   puts ("}");
 }
 
+static double
+invoke_time(const struct file *f)
+{
+  double invoked_time_in_mill = (f->t_invoked.tv_sec) * 1000 +
+            (f->t_invoked.tv_usec) / 1000;
+  return invoked_time_in_mill;
+}
+
+static double
+finish_time(const struct file *f)
+{
+  double finished_time_in_mill = (f->t_finished.tv_sec) * 1000 +
+            (f->t_finished.tv_usec) / 1000;
+  return finished_time_in_mill;
+}
+
+void
+prof_print_str (const struct file *f, char *fmt)
+{
+  fprintf (stderr, fmt);
+}
+
+void
+prof_print_name (const struct file *f, char *fmt)
+{
+  fprintf (stderr, "%s", f->name);
+}
+
+void
+prof_print_level (const struct file *f, char *fmt)
+{
+  fprintf (stderr, "%u", makelevel);
+}
+
+void
+prof_print_pid (const struct file *f, char *fmt)
+{
+  fprintf (stderr, "%d", getpid());
+}
+
+void
+prof_print_invokets (const struct file *f, char *fmt)
+{
+  fprintf (stderr, "%.0f", invoke_time(f));
+}
+
+void
+prof_print_finishts (const struct file *f, char *fmt)
+{
+  fprintf (stderr, "%.0f", finish_time(f));
+}
+
+void
+prof_print_diff (const struct file *f, char *fmt)
+{
+  double itime = invoke_time(f);
+  double ftime = finish_time(f);
+  fprintf (stderr, "%.0f", ftime-itime);
+}
+
 static void
 print_target_update_time (const void *item)
 {
@@ -1199,15 +1259,20 @@ print_target_update_time (const void *item)
     );
   if ((f->is_target) && (!built_in_special_target))
     {
-      double invoked_time_in_mill = (f->t_invoked.tv_sec) * 1000 +
-                (f->t_invoked.tv_usec) / 1000;
-      double finished_time_in_mill = (f->t_finished.tv_sec) * 1000 +
-                (f->t_finished.tv_usec) / 1000;
-      if (invoked_time_in_mill)
-        fprintf (stderr, "[PROF:%s:lvl=%u:pid=%d] %.0f;%.0f;%.0f\n", f->name,
-                makelevel, getpid(),
-                invoked_time_in_mill, finished_time_in_mill,
-                finished_time_in_mill-invoked_time_in_mill);
+
+      double itime = invoke_time(f);
+      if (!prif_start)
+        fatal (NILF, _("internal error: profile option active, "
+            "but no profile print information found"));
+      if (itime)
+        {
+          prof_info *pprof;
+          for (pprof = prif_start; pprof; pprof = pprof->next)
+            {
+              pprof->info_func(f, pprof->fmt);
+            }
+          fprintf(stderr, "\n");
+        }
     }
 }
 
