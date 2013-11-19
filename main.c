@@ -183,7 +183,11 @@ int print_data_base_flag = 0;
 /* Nonzero means print time stamps for start and finish for each of the
    targets in the makefile. */
 
-int print_target_update_time_flag = 0;
+static struct stringlist *profile_option = 0;
+
+/* Structure keeping the function call list used to print profiling info */
+prof_info *prif_start = 0;
+
 /* Nonzero means don't remake anything; just return a nonzero status
    if the specified targets are not up to date (-q).  */
 
@@ -362,6 +366,10 @@ static const char *const usage[] =
     N_("\
   -p, --print-data-base       Print make's internal database.\n"),
     N_("\
+  -P[FMT], --profile[=FMT], --profile-format[=FMT]\n\
+                              Print profiling information for each target\n\
+                              using the format 'FMT'.\n"),
+    N_("\
   -q, --question              Run no recipe; exit status says if up to date.\n"),
     N_("\
   -r, --no-builtin-rules      Disable the built-in implicit rules.\n"),
@@ -376,8 +384,6 @@ static const char *const usage[] =
   -t, --touch                 Touch targets instead of remaking them.\n"),
     N_("\
   --trace                     Print tracing information.\n"),
-    N_("\
-  -u, --update-time           Print elapsed time of each target.\n"),
     N_("\
   -v, --version               Print the version number of make and exit.\n"),
     N_("\
@@ -421,7 +427,6 @@ static const struct command_switch switches[] =
     { 'S', flag_off, &keep_going_flag, 1, 1, 0, 0, &default_keep_going_flag,
       "no-keep-going" },
     { 't', flag, &touch_flag, 1, 1, 1, 0, 0, "touch" },
-    { 'u', flag, &print_target_update_time_flag, 1, 1, 0, 0, 0, "update-time" },
     { 'v', flag, &print_version_flag, 1, 1, 0, 0, 0, "version" },
     { 'w', flag, &print_directory_flag, 1, 1, 0, 0, 0, "print-directory" },
 
@@ -441,6 +446,8 @@ static const struct command_switch switches[] =
 #endif
     { 'o', filename, &old_files, 0, 0, 0, 0, 0, "old-file" },
     { 'O', string, &output_sync_option, 1, 1, 0, "target", 0, "output-sync" },
+    { 'P', string, &profile_option, 1, 1, 0, "[PROF:%N:lvl=%L:pid=%P] %S;%E;%D",
+       0, "profile" },
     { 'W', filename, &new_files, 0, 0, 0, 0, 0, "what-if" },
 
     /* These are long-style options.  */
@@ -468,6 +475,7 @@ static struct option long_option_aliases[] =
     { "max-load",       optional_argument,      0, 'l' },
     { "dry-run",        no_argument,            0, 'n' },
     { "recon",          no_argument,            0, 'n' },
+    { "profile-format", optional_argument,      0, 'P' },
     { "makefile",       required_argument,      0, 'f' },
   };
 
@@ -782,6 +790,100 @@ decode_output_sync_flags (void)
 
   if (sync_mutex)
     RECORD_SYNC_MUTEX (sync_mutex);
+}
+
+static const char *
+profile_marker_index(const char *s, int *found)
+{
+  char *ix;
+  const char *ps, *pe;
+
+  *found = 0;
+
+  /* consume all literal strings and '%%' */
+  for (ps = 0; (!ps) || (ix && (*(ix+1) == '%')); ps = ix+2)
+    {
+      if (!ps) ps = s;
+      ix = index(ps, '%');
+      if (ix)
+        {
+          pe = ix;
+          if (*(ix+1) == '\0')
+            {
+              /* XXX: Is this better than returning an error? */
+              *ix = '\0';
+              ix = 0;
+            }
+          else
+            *found = (*(ix+1) != '%');
+        }
+      else
+        {
+          pe = index(ps,'\0');
+        }
+    }
+
+  return pe;
+}
+
+static void
+decode_profile_format (void)
+{
+  const char **pp;
+
+  prof_info **pprif = &prif_start;
+  int found;
+
+  if (!profile_option)
+    return;
+
+  /* Turn the profile format string into a printf format string and list of
+     functions to call to get the values of the parameters for the final
+     string.  */
+
+  for (pp=profile_option->list; *pp; ++pp)
+    {
+      const char *p = *pp;
+      const char *pe;
+
+      do
+        {
+          pe = profile_marker_index(p, &found);
+          /* store literal string */
+          if (p < pe)
+            {
+              /* add the literal string between p and pe */
+              *pprif = calloc(sizeof(prof_info), 1);
+              (*pprif)->fmt = xstrndup(p, (unsigned int)(pe-p));
+              (*pprif)->info_func = prof_print_str;
+              pprif = &((*pprif)->next);
+            }
+          if (found)
+            {
+              prof_info_func_t pfunc = 0;
+              switch (*(pe+1))
+                {
+                  case 'N': pfunc = prof_print_name; pe+=2; break;
+                  case 'L': pfunc = prof_print_level; pe+=2; break;
+                  case 'P': pfunc = prof_print_pid; pe+=2; break;
+                  case 'S': pfunc = prof_print_invokets; pe+=2; break;
+                  case 'E': pfunc = prof_print_finishts; pe+=2; break;
+                  case 'D': pfunc = prof_print_diff; pe+=2; break;
+                  default :
+                    fatal (NILF,
+                        _("unknown profile information specifier '%c'"),
+                        *(pe+1));
+                    break;
+                }
+              *pprif = calloc(sizeof(prof_info), 1);
+              (*pprif)->info_func = pfunc;
+              pprif = &((*pprif)->next);
+            }
+          p = pe;
+        }
+      while (*p);
+    }
+
 }
 
 #ifdef WINDOWS32
@@ -2900,6 +3002,7 @@ decode_switches (int argc, char **argv, int env)
   /* If there are any options that need to be decoded do it now.  */
   decode_debug_flags ();
   decode_output_sync_flags ();
+  decode_profile_format ();
 }
 
 /* Decode switches from environment variable ENVAR (which is LEN chars long).
@@ -3406,7 +3509,7 @@ die (int status)
       if (print_data_base_flag)
         print_data_base ();
 
-      if (print_target_update_time_flag)
+      if (profile_option)
         print_targets_update_time ();
 
       if (verify_flag)
