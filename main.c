@@ -183,7 +183,14 @@ int print_data_base_flag = 0;
 /* Nonzero means print time stamps for start and finish for each of the
    targets in the makefile. */
 
-int print_target_update_time_flag = 0;
+static char *profile_option = 0;
+
+char profile_sep = ':';
+char *profile_prefix = 0;
+
+/* The actual function doing the profile information printing */
+profile_print_func_t print_profile_func = 0;
+
 /* Nonzero means don't remake anything; just return a nonzero status
    if the specified targets are not up to date (-q).  */
 
@@ -362,6 +369,12 @@ static const char *const usage[] =
     N_("\
   -p, --print-data-base       Print make's internal database.\n"),
     N_("\
+  -P[[[PREFIX]:[SEP]]format],\n\
+  --profile[=[[PREFIX]:[SEP]]format],\n\
+  --profile-format[=[[PREFIX]:[SEP]]format]\n\
+                              Print profiling information for each target\n\
+                              using the format 'FMT'.\n"),
+    N_("\
   -q, --question              Run no recipe; exit status says if up to date.\n"),
     N_("\
   -r, --no-builtin-rules      Disable the built-in implicit rules.\n"),
@@ -376,8 +389,6 @@ static const char *const usage[] =
   -t, --touch                 Touch targets instead of remaking them.\n"),
     N_("\
   --trace                     Print tracing information.\n"),
-    N_("\
-  -u, --update-time           Print elapsed time of each target.\n"),
     N_("\
   -v, --version               Print the version number of make and exit.\n"),
     N_("\
@@ -421,7 +432,6 @@ static const struct command_switch switches[] =
     { 'S', flag_off, &keep_going_flag, 1, 1, 0, 0, &default_keep_going_flag,
       "no-keep-going" },
     { 't', flag, &touch_flag, 1, 1, 1, 0, 0, "touch" },
-    { 'u', flag, &print_target_update_time_flag, 1, 1, 0, 0, 0, "update-time" },
     { 'v', flag, &print_version_flag, 1, 1, 0, 0, 0, "version" },
     { 'w', flag, &print_directory_flag, 1, 1, 0, 0, 0, "print-directory" },
 
@@ -441,6 +451,7 @@ static const struct command_switch switches[] =
 #endif
     { 'o', filename, &old_files, 0, 0, 0, 0, 0, "old-file" },
     { 'O', string, &output_sync_option, 1, 1, 0, "target", 0, "output-sync" },
+    { 'P', string, &profile_option, 1, 1, 0, "PROFILE:short", 0, "profile" },
     { 'W', filename, &new_files, 0, 0, 0, 0, 0, "what-if" },
 
     /* These are long-style options.  */
@@ -468,6 +479,7 @@ static struct option long_option_aliases[] =
     { "max-load",       optional_argument,      0, 'l' },
     { "dry-run",        no_argument,            0, 'n' },
     { "recon",          no_argument,            0, 'n' },
+    { "profile-format", optional_argument,      0, 'P' },
     { "makefile",       required_argument,      0, 'f' },
   };
 
@@ -782,6 +794,57 @@ decode_output_sync_flags (void)
 
   if (sync_mutex)
     RECORD_SYNC_MUTEX (sync_mutex);
+}
+
+static void
+decode_profile_format (void)
+{
+  char *p = profile_option;
+  char *prefix_str_src = profile_option;
+  char default_profile_prefix[] = "PROFILE";
+  size_t len = 0;
+
+  if (!profile_option)
+    return;
+
+  /* If the profile option contains ':' the string up to it is a prefix to be
+     printed before the profile information; If not, the default prefix
+     is chosen: 'PROFILE'; The rest is the possible profile format selector */
+  p = index (profile_option, ':');
+  if (p)
+    {
+      len = (size_t)(p - profile_option);
+      p++;
+    }
+  else
+    {
+      prefix_str_src = default_profile_prefix;
+      len = strlen (default_profile_prefix);
+      p = profile_option;
+    }
+  /* we delay setting profile_prefix to prevent useless memory allocation */
+
+  /* an optional filed separator can be chosen from the predefined set */
+  if ( (*p) == '\0' )
+    O (fatal, NILF, _("profile type can't be empty"));
+  else
+    if ( strpbrk(p," %#@!`&:;,.|_+=^<>/\t") == p ) profile_sep = *p++;
+
+  if (!strcmp (p, "simple"))   print_profile_func = print_profile_simple;
+  if (!strcmp (p, "startend")) print_profile_func = print_profile_startend;
+  if (!strcmp (p, "short"))    print_profile_func = print_profile_short;
+  if (!strcmp (p, "long"))     print_profile_func = print_profile_long;
+  if (!print_profile_func)
+      OS (fatal, NILF, _("unknown profile type '%s'"), p);
+
+  profile_prefix = xstrndup(prefix_str_src, len);
+
+}
+
+void
+clean_profile(void)
+{
+  if (profile_prefix) free(profile_prefix);
 }
 
 #ifdef WINDOWS32
@@ -2900,6 +2963,7 @@ decode_switches (int argc, char **argv, int env)
   /* If there are any options that need to be decoded do it now.  */
   decode_debug_flags ();
   decode_output_sync_flags ();
+  decode_profile_format ();
 }
 
 /* Decode switches from environment variable ENVAR (which is LEN chars long).
@@ -3406,12 +3470,14 @@ die (int status)
       if (print_data_base_flag)
         print_data_base ();
 
-      if (print_target_update_time_flag)
+      if (profile_option)
         print_targets_update_time ();
 
       if (verify_flag)
         verify_file_data_base ();
 
+      if (profile_option)
+        clean_profile();
       clean_jobserver (status);
 
       if (output_context)

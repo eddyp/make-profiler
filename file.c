@@ -1050,6 +1050,87 @@ print_file_data_base (void)
 }
 
 
+static double
+invoke_time(const struct file *f)
+{
+  double invoked_time_in_mill = (f->t_invoked.tv_sec) * 1000 +
+            (f->t_invoked.tv_usec) / 1000;
+  return invoked_time_in_mill;
+}
+
+static double
+finish_time(const struct file *f)
+{
+  double finished_time_in_mill = (f->t_finished.tv_sec) * 1000 +
+            (f->t_finished.tv_usec) / 1000;
+  return finished_time_in_mill;
+}
+
+static double
+diff_time (const struct file *f)
+{
+  double itime = invoke_time(f);
+  double ftime = finish_time(f);
+  return ftime-itime;
+}
+
+/* %N:%S:%D */
+void
+print_profile_simple (const struct file *f)
+{
+  fprintf (stderr, "%2$s" "%1$c"
+      "%3$s" "%1$c"
+      "%4$.0f" "%1$c"
+      "%5$.0f\n",
+      (int)profile_sep, profile_prefix, f->name,
+      invoke_time(f), diff_time(f));
+}
+
+/* %N:%S:%E */
+void
+print_profile_startend (const struct file *f)
+{
+  fprintf (stderr, "%2$s" "%1$c"
+      "%3$s" "%1$c"
+      "%4$.0f" "%1$c"
+      "%5$.0f\n",
+      profile_sep, profile_prefix, f->name,
+      invoke_time(f), finish_time(f));
+}
+
+/* %N:%L:%P:%S:%E:%D */
+void
+print_profile_short (const struct file *f)
+{
+  fprintf (stderr, "%2$s" "%1$c"
+      "%3$s" "%1$c"
+      "%4$d" "%1$c"
+      "%5$d" "%1$c"
+      "%6$.0f" "%1$c"
+      "%7$.0f" "%1$c"
+      "%8$.0f\n",
+      profile_sep, profile_prefix, f->name,
+      makelevel, (unsigned int)getpid(),
+      invoke_time(f), finish_time(f), diff_time(f) );
+}
+
+/* target=%N : level=%L : pid=%P : start=%S : end=%E : duration=%D */
+void
+print_profile_long (const struct file *f)
+{
+  fprintf (stderr, "%2$s" " %1$c "
+      "target=%3$s" " %1$c "
+      "level=%4$d" " %1$c "
+      "pid=%5$d" " %1$c "
+      "start=%6$.0f" " %1$c "
+      "end=%7$.0f" " %1$c "
+      "duration=%8$.0f\n",
+      profile_sep, profile_prefix, f->name,
+      makelevel, (unsigned int)getpid(),
+      invoke_time(f), finish_time(f), diff_time(f) );
+}
+
+
 static void
 print_target_update_time (const void *item)
 {
@@ -1074,15 +1155,13 @@ print_target_update_time (const void *item)
     );
   if ((f->is_target) && (!built_in_special_target))
     {
-      double invoked_time_in_mill = (f->t_invoked.tv_sec) * 1000 +
-                (f->t_invoked.tv_usec) / 1000;
-      double finished_time_in_mill = (f->t_finished.tv_sec) * 1000 +
-                (f->t_finished.tv_usec) / 1000;
-      if (invoked_time_in_mill)
-        fprintf (stderr, "[PROF:%s:lvl=%u:pid=%d] %.0f;%.0f;%.0f\n", f->name,
-                makelevel, getpid(),
-                invoked_time_in_mill, finished_time_in_mill,
-                finished_time_in_mill-invoked_time_in_mill);
+
+      double itime = invoke_time(f);
+      if (!print_profile_func)
+        O( fatal, NILF, _("internal error: profile option active, "
+            "but no profile print format selected"));
+      if (itime)
+          print_profile_func(f);
     }
 }
 
@@ -1091,7 +1170,7 @@ print_targets_update_time (void)
 {
   hash_map (&files, print_target_update_time);
 }
- 
+
 /* Verify the integrity of the data base of files.  */
 
 #define VERIFY_CACHED(_p,_n) \
