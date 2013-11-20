@@ -1192,43 +1192,45 @@ finish_time(const struct file *f)
 }
 
 void
-prof_print_str (const struct file *f, char *fmt)
+prof_print_str (__attribute__ ((unused)) const struct file *f, char *fmt)
 {
   fprintf (stderr, fmt);
 }
 
 void
-prof_print_name (const struct file *f, char *fmt)
+prof_print_name (const struct file *f, __attribute__((unused)) char *fmt)
 {
   fprintf (stderr, "%s", f->name);
 }
 
 void
-prof_print_level (const struct file *f, char *fmt)
+prof_print_level (__attribute__((unused)) const struct file *f,
+    __attribute__((unused)) char *fmt)
 {
   fprintf (stderr, "%u", makelevel);
 }
 
 void
-prof_print_pid (const struct file *f, char *fmt)
+prof_print_pid (__attribute__((unused)) const struct file *f,
+    __attribute__((unused)) char *fmt)
 {
   fprintf (stderr, "%d", getpid());
 }
 
 void
-prof_print_invokets (const struct file *f, char *fmt)
+prof_print_invokets (const struct file *f, __attribute__((unused)) char *fmt)
 {
   fprintf (stderr, "%.0f", invoke_time(f));
 }
 
 void
-prof_print_finishts (const struct file *f, char *fmt)
+prof_print_finishts (const struct file *f, __attribute__((unused)) char *fmt)
 {
   fprintf (stderr, "%.0f", finish_time(f));
 }
 
 void
-prof_print_diff (const struct file *f, char *fmt)
+prof_print_diff (const struct file *f, __attribute__((unused)) char *fmt)
 {
   double itime = invoke_time(f);
   double ftime = finish_time(f);
@@ -1269,7 +1271,7 @@ print_target_update_time (const void *item)
           prof_info *pprof;
           for (pprof = prif_start; pprof; pprof = pprof->next)
             {
-              pprof->info_func(f, pprof->fmt);
+              pprof->info_func(f, (char *)pprof->fmt);
             }
           fprintf(stderr, "\n");
         }

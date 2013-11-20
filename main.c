@@ -900,7 +900,7 @@ free_prof_sublist(prof_info *prof_slist)
     {
       free_prof_sublist(prof_slist->next);
       prof_slist->next = 0;
-      if (prof_slist->fmt) free(prof_slist->fmt);
+      if (prof_slist->fmt) free((void*)prof_slist->fmt);
       prof_slist->fmt = 0;
       prof_slist->info_func = 0;
       free(prof_slist);
@@ -910,10 +910,12 @@ free_prof_sublist(prof_info *prof_slist)
 static void
 clean_profile_list(void)
 {
+  prof_info **pprif;
+
   if (!profile_option)
     return;
 
-  prof_info **pprif = &prif_start;
+  pprif = &prif_start;
   free_prof_sublist(*pprif);
 }
 
