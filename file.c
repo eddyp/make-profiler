@@ -1139,7 +1139,7 @@ print_target_update_time (const void *item)
 
       double itime = invoke_time(f);
       if (!prif_start)
-        fatal (NILF, _("internal error: profile option active, "
+        O( fatal, NILF, _("internal error: profile option active, "
             "but no profile print information found"));
       if (itime)
         {
@@ -1158,7 +1158,7 @@ print_targets_update_time (void)
 {
   hash_map (&files, print_target_update_time);
 }
- 
+
 /* Verify the integrity of the data base of files.  */
 
 #define VERIFY_CACHED(_p,_n) \
