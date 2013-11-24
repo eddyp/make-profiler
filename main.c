@@ -454,7 +454,7 @@ static const struct command_switch switches[] =
 #endif
     { 'o', filename, &old_files, 0, 0, 0, 0, 0, "old-file" },
     { 'O', string, &output_sync_option, 1, 1, 0, "target", 0, "output-sync" },
-    { 'P', string, &profile_option, 1, 1, 0, "[PROF:%N:lvl=%L:pid=%P] %S;%E;%D",
+    { 'P', strlist, &profile_option, 1, 1, 0, "[PROF:%N:lvl=%L:pid=%P] %S;%E;%D",
        0, "profile" },
     { 'W', filename, &new_files, 0, 0, 0, 0, 0, "what-if" },
 
@@ -878,7 +878,7 @@ decode_profile_format (void)
                   case 'E': pfunc = prof_print_finishts; pe+=2; break;
                   case 'D': pfunc = prof_print_diff; pe+=2; break;
                   default :
-                    fatal (NILF,
+                    OS(fatal, NILF,
                         _("unknown profile information specifier '%c'"),
                         *(pe+1));
                     break;

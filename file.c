@@ -1264,7 +1264,7 @@ print_target_update_time (const void *item)
 
       double itime = invoke_time(f);
       if (!prif_start)
-        fatal (NILF, _("internal error: profile option active, "
+        O( fatal, NILF, _("internal error: profile option active, "
             "but no profile print information found"));
       if (itime)
         {
