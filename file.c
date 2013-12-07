@@ -1082,7 +1082,7 @@ print_profile_simple (const struct file *f)
       "%3$s" "%1$c"
       "%4$.0f" "%1$c"
       "%5$.0f\n",
-      (int)profile_sep, profile_prefix, f->name,
+      profile_sep, profile_prefix, f->name,
       invoke_time(f), diff_time(f));
 }
 
