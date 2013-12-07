@@ -1066,51 +1066,70 @@ finish_time(const struct file *f)
   return finished_time_in_mill;
 }
 
-void
-prof_print_str (__attribute__ ((unused)) const struct file *f, char *fmt)
-{
-  fprintf (stderr, fmt);
-}
-
-void
-prof_print_name (const struct file *f, __attribute__((unused)) char *fmt)
-{
-  fprintf (stderr, "%s", f->name);
-}
-
-void
-prof_print_level (__attribute__((unused)) const struct file *f,
-    __attribute__((unused)) char *fmt)
-{
-  fprintf (stderr, "%u", makelevel);
-}
-
-void
-prof_print_pid (__attribute__((unused)) const struct file *f,
-    __attribute__((unused)) char *fmt)
-{
-  fprintf (stderr, "%d", getpid());
-}
-
-void
-prof_print_invokets (const struct file *f, __attribute__((unused)) char *fmt)
-{
-  fprintf (stderr, "%.0f", invoke_time(f));
-}
-
-void
-prof_print_finishts (const struct file *f, __attribute__((unused)) char *fmt)
-{
-  fprintf (stderr, "%.0f", finish_time(f));
-}
-
-void
-prof_print_diff (const struct file *f, __attribute__((unused)) char *fmt)
+static double
+diff_time (const struct file *f)
 {
   double itime = invoke_time(f);
   double ftime = finish_time(f);
-  fprintf (stderr, "%.0f", ftime-itime);
+  return ftime-itime;
 }
+
+/* %N:%S:%D */
+void
+print_profile_simple (const struct file *f)
+{
+  fprintf (stderr, "%2$s" "%1$c"
+      "%3$s" "%1$c"
+      "%4$.0f" "%1$c"
+      "%5$.0f\n",
+      (int)profile_sep, profile_prefix, f->name,
+      invoke_time(f), diff_time(f));
+}
+
+/* %N:%S:%E */
+void
+print_profile_startend (const struct file *f)
+{
+  fprintf (stderr, "%2$s" "%1$c"
+      "%3$s" "%1$c"
+      "%4$.0f" "%1$c"
+      "%5$.0f\n",
+      profile_sep, profile_prefix, f->name,
+      invoke_time(f), finish_time(f));
+}
+
+/* %N:%L:%P:%S:%E:%D */
+void
+print_profile_short (const struct file *f)
+{
+  fprintf (stderr, "%2$s" "%1$c"
+      "%3$s" "%1$c"
+      "%4$d" "%1$c"
+      "%5$d" "%1$c"
+      "%6$.0f" "%1$c"
+      "%7$.0f" "%1$c"
+      "%8$.0f\n",
+      profile_sep, profile_prefix, f->name,
+      makelevel, (unsigned int)getpid(),
+      invoke_time(f), finish_time(f), diff_time(f) );
+}
+
+/* target=%N : level=%L : pid=%P : start=%S : end=%E : duration=%D */
+void
+print_profile_long (const struct file *f)
+{
+  fprintf (stderr, "%2$s" " %1$c "
+      "target=%3$s" " %1$c "
+      "level=%4$d" " %1$c "
+      "pid=%5$d" " %1$c "
+      "start=%6$.0f" " %1$c "
+      "end=%7$.0f" " %1$c "
+      "duration=%8$.0f\n",
+      profile_sep, profile_prefix, f->name,
+      makelevel, (unsigned int)getpid(),
+      invoke_time(f), finish_time(f), diff_time(f) );
+}
+
 
 static void
 print_target_update_time (const void *item)
@@ -1138,18 +1157,11 @@ print_target_update_time (const void *item)
     {
 
       double itime = invoke_time(f);
-      if (!prif_start)
+      if (!print_profile_func)
         O( fatal, NILF, _("internal error: profile option active, "
-            "but no profile print information found"));
+            "but no profile print format selected"));
       if (itime)
-        {
-          prof_info *pprof;
-          for (pprof = prif_start; pprof; pprof = pprof->next)
-            {
-              pprof->info_func(f, (char *)pprof->fmt);
-            }
-          fprintf(stderr, "\n");
-        }
+          print_profile_func(f);
     }
 }
 

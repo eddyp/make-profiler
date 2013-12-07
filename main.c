@@ -183,10 +183,13 @@ int print_data_base_flag = 0;
 /* Nonzero means print time stamps for start and finish for each of the
    targets in the makefile. */
 
-static struct stringlist *profile_option = 0;
+static char *profile_option = 0;
 
-/* Structure keeping the function call list used to print profiling info */
-prof_info *prif_start = 0;
+char profile_sep = ':';
+char *profile_prefix = 0;
+
+/* The actual function doing the profile information printing */
+profile_print_func_t print_profile_func = 0;
 
 /* Nonzero means don't remake anything; just return a nonzero status
    if the specified targets are not up to date (-q).  */
@@ -366,7 +369,9 @@ static const char *const usage[] =
     N_("\
   -p, --print-data-base       Print make's internal database.\n"),
     N_("\
-  -P[FMT], --profile[=FMT], --profile-format[=FMT]\n\
+  -P[[[PREFIX]:[SEP]]format],\n\
+  --profile[=[[PREFIX]:[SEP]]format],\n\
+  --profile-format[=[[PREFIX]:[SEP]]format]\n\
                               Print profiling information for each target\n\
                               using the format 'FMT'.\n"),
     N_("\
@@ -446,8 +451,7 @@ static const struct command_switch switches[] =
 #endif
     { 'o', filename, &old_files, 0, 0, 0, 0, 0, "old-file" },
     { 'O', string, &output_sync_option, 1, 1, 0, "target", 0, "output-sync" },
-    { 'P', strlist, &profile_option, 1, 1, 0, "[PROF:%N:lvl=%L:pid=%P] %S;%E;%D",
-       0, "profile" },
+    { 'P', string, &profile_option, 1, 1, 0, "PROFILE:short", 0, "profile" },
     { 'W', filename, &new_files, 0, 0, 0, 0, 0, "what-if" },
 
     /* These are long-style options.  */
@@ -792,123 +796,55 @@ decode_output_sync_flags (void)
     RECORD_SYNC_MUTEX (sync_mutex);
 }
 
-static const char *
-profile_marker_index(const char *s, int *found)
-{
-  char *ix;
-  const char *ps, *pe;
-
-  *found = 0;
-
-  /* consume all literal strings and '%%' */
-  for (ps = 0; (!ps) || (ix && (*(ix+1) == '%')); ps = ix+2)
-    {
-      if (!ps) ps = s;
-      ix = index(ps, '%');
-      if (ix)
-        {
-          pe = ix;
-          if (*(ix+1) == '\0')
-            {
-              /* XXX: Is this better than returning an error? */
-              *ix = '\0';
-              ix = 0;
-            }
-          else
-            *found = (*(ix+1) != '%');
-        }
-      else
-        {
-          pe = index(ps,'\0');
-        }
-    }
-
-  return pe;
-}
-
 static void
 decode_profile_format (void)
 {
-  const char **pp;
-
-  prof_info **pprif = &prif_start;
-  int found;
-
-  if (!profile_option)
-    return;
-
-  /* Turn the profile format string into a printf format string and list of
-     functions to call to get the values of the parameters for the final
-     string.  */
-
-  for (pp=profile_option->list; *pp; ++pp)
-    {
-      const char *p = *pp;
-      const char *pe;
-
-      do
-        {
-          pe = profile_marker_index(p, &found);
-          /* store literal string */
-          if (p < pe)
-            {
-              /* add the literal string between p and pe */
-              *pprif = calloc(sizeof(prof_info), 1);
-              (*pprif)->fmt = xstrndup(p, (unsigned int)(pe-p));
-              (*pprif)->info_func = prof_print_str;
-              pprif = &((*pprif)->next);
-            }
-          if (found)
-            {
-              prof_info_func_t pfunc = 0;
-              switch (*(pe+1))
-                {
-                  case 'N': pfunc = prof_print_name; pe+=2; break;
-                  case 'L': pfunc = prof_print_level; pe+=2; break;
-                  case 'P': pfunc = prof_print_pid; pe+=2; break;
-                  case 'S': pfunc = prof_print_invokets; pe+=2; break;
-                  case 'E': pfunc = prof_print_finishts; pe+=2; break;
-                  case 'D': pfunc = prof_print_diff; pe+=2; break;
-                  default :
-                    OS(fatal, NILF,
-                        _("unknown profile information specifier '%c'"),
-                        *(pe+1));
-                    break;
-                }
-              *pprif = calloc(sizeof(prof_info), 1);
-              (*pprif)->info_func = pfunc;
-              pprif = &((*pprif)->next);
-            }
-          p = pe;
-        }
-      while (*p);
-    }
-}
-
-static void
-free_prof_sublist(prof_info *prof_slist)
-{
-  if (prof_slist)
-    {
-      free_prof_sublist(prof_slist->next);
-      prof_slist->next = 0;
-      if (prof_slist->fmt) free((void*)prof_slist->fmt);
-      prof_slist->fmt = 0;
-      prof_slist->info_func = 0;
-      free(prof_slist);
-    }
-}
-
-static void
-clean_profile_list(void)
-{
-  prof_info **pprif;
+  char *p = profile_option;
+  char *prefix_str_src = profile_option;
+  char default_profile_prefix[] = "PROFILE";
+  size_t len = 0;
 
   if (!profile_option)
     return;
 
-  pprif = &prif_start;
-  free_prof_sublist(*pprif);
+  /* If the profile option contains ':' the string up to it is a prefix to be
+     printed before the profile information; If not, the default prefix
+     is chosen: 'PROFILE'; The rest is the possible profile format selector */
+  p = index (profile_option, ':');
+  if (p)
+    {
+      len = (size_t)(p - profile_option);
+      p++;
+    }
+  else
+    {
+      prefix_str_src = default_profile_prefix;
+      len = strlen (default_profile_prefix);
+      p = profile_option;
+    }
+  /* we delay setting profile_prefix to prevent useless memory allocation */
+
+  /* an optional filed separator can be chosen from the predefined set */
+  if ( (*p) == '\0' )
+    O (fatal, NILF, _("profile type can't be empty"));
+  else
+    if ( strpbrk(p," %#@!`&:;,.|_+=^<>/\t") == p ) profile_sep = *p++;
+
+  if (!strcmp (p, "simple"))   print_profile_func = print_profile_simple;
+  if (!strcmp (p, "startend")) print_profile_func = print_profile_startend;
+  if (!strcmp (p, "short"))    print_profile_func = print_profile_short;
+  if (!strcmp (p, "long"))     print_profile_func = print_profile_long;
+  if (!print_profile_func)
+      OS (fatal, NILF, _("unknown profile type '%s'"), p);
+
+  profile_prefix = xstrndup(prefix_str_src, len);
+
+}
+
+void
+clean_profile(void)
+{
+  if (profile_prefix) free(profile_prefix);
 }
 
 #ifdef WINDOWS32
@@ -3540,7 +3476,8 @@ die (int status)
       if (verify_flag)
         verify_file_data_base ();
 
-      clean_profile_list();
+      if (profile_option)
+        clean_profile();
       clean_jobserver (status);
 
       if (output_context)
