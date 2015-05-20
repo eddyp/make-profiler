@@ -187,6 +187,7 @@ static char *profile_option = 0;
 
 char profile_sep = ':';
 char *profile_prefix = 0;
+volatile double profile_ref_ts = 0;
 
 /* The actual function doing the profile information printing */
 profile_print_func_t print_profile_func = 0;
@@ -803,6 +804,7 @@ decode_profile_format (void)
   char *prefix_str_src = profile_option;
   char default_profile_prefix[] = "PROFILE";
   size_t len = 0;
+  struct timeval t_ref;
 
   if (!profile_option)
     return;
@@ -839,6 +841,11 @@ decode_profile_format (void)
 
   profile_prefix = xstrndup(prefix_str_src, len);
 
+  /* time stamps relative to this moment */
+  gettimeofday(&t_ref, NULL);
+  if (profile_ref_ts == 0)
+    profile_ref_ts = t_ref.tv_sec * 1000 + t_ref.tv_usec / 1000;
+  fprintf(stderr, "reference ts: %.0f\n", profile_ref_ts);
 }
 
 void
@@ -1486,6 +1493,18 @@ main (int argc, char **argv, char **envp)
     else
       makelevel = 0;
   }
+
+  /* figure out the reference profile time stamp */
+  {
+    struct variable *v = lookup_variable (STRING_SIZE_TUPLE (MAKEPROFILEREFTS_NAME));
+    if (v && v->value[0] != '\0' && v->value[0] != '-')
+      profile_ref_ts = (double) atof (v->value);
+    else
+      profile_ref_ts = 0;
+    fprintf(stderr, "    >>> got profile ref [lvl=%u, pid=%u]: %f\n",
+        makelevel, getpid(), profile_ref_ts);
+  }
+
 
 #ifdef WINDOWS32
   if (suspend_flag)
@@ -2405,6 +2424,11 @@ main (int argc, char **argv, char **envp)
                   {
                     *p = alloca (40);
                     sprintf (*p, "%s=%u", MAKELEVEL_NAME, makelevel);
+                  }
+                else if (strneq (*p, MAKEPROFILEREFTS_NAME"=", MAKEPROFILEREFTS_LENGTH+1))
+                  {
+                    *p = alloca (40);
+                    sprintf (*p, "%s=%f", MAKEPROFILEREFTS_NAME, profile_ref_ts);
                   }
                 else if (strneq (*p, "MAKE_RESTARTS=", CSTRLEN ("MAKE_RESTARTS=")))
                   {

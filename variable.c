@@ -796,6 +796,9 @@ define_automatic_variables (void)
   sprintf (buf, "%u", makelevel);
   define_variable_cname (MAKELEVEL_NAME, buf, o_env, 0);
 
+  sprintf (buf, "%f", profile_ref_ts);
+  define_variable_cname(MAKEPROFILEREFTS_NAME, buf, o_default, 1);
+
   sprintf (buf, "%s%s%s",
            version_string,
            (remote_description == 0 || remote_description[0] == '\0')
@@ -962,6 +965,7 @@ target_environment (struct file *file)
   struct variable **v_slot;
   struct variable **v_end;
   struct variable makelevel_key;
+  struct variable makeprofrefts_key;
   char **result_0;
   char **result;
 
@@ -1048,6 +1052,10 @@ target_environment (struct file *file)
   makelevel_key.name = MAKELEVEL_NAME;
   makelevel_key.length = MAKELEVEL_LENGTH;
   hash_delete (&table, &makelevel_key);
+
+  makeprofrefts_key.name = MAKEPROFILEREFTS_NAME;
+  makeprofrefts_key.length = MAKEPROFILEREFTS_LENGTH;
+  hash_delete (&table, &makeprofrefts_key);
 
   result = result_0 = xmalloc ((table.ht_fill + 2) * sizeof (char *));
 

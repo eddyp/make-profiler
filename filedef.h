@@ -114,6 +114,7 @@ typedef void (*profile_print_func_t) (const struct file *target);
 extern char profile_sep;
 extern char *profile_prefix;
 extern profile_print_func_t print_profile_func;
+extern volatile double profile_ref_ts;
 
 struct file *lookup_file (const char *name);
 struct file *enter_file (const char *name);
